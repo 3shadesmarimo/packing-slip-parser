@@ -32,9 +32,8 @@ if st.button('Extract LPNs', type='primary', disabled=not uploads):
             st.error(f'{f.name}: {exc}')
     if successes:
         st.success(f'Imported {successes} packing slip(s).')
-
 if st.session_state.rows:
-    rows = st.session_state.rows
+    rows = sort_rows(st.session_state.rows)
     st.metric('LPNs extracted', len(rows))
     st.caption('All uploaded stops, cities, and LPNs appear together in one printable table. Long lists continue onto additional pages.')
     preview = [{'Stop ID': r['Stop ID'], 'City': r['City'], 'LPN': r['LPN'],
