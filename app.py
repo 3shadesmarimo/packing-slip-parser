@@ -2,7 +2,7 @@
 import hashlib
 import io
 import streamlit as st
-from parser import parse_pdf, PackingSlipError
+from parser import parse_pdf, PackingSlipError, sort_rows
 from print_report import create_print_pdf
 
 st.set_page_config(page_title='Packing Slip Checklist', page_icon='📦', layout='wide')
