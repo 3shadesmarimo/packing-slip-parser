@@ -147,6 +147,39 @@ def parse_packing_slip(pdf_file):
         })
 
     return rows
+def parse_packing_slip(pdf_file):
+    # ...all your existing code...
+
+    return rows
+
+
+# ADD IT HERE
+def sort_rows(rows):
+    stop_priority = {
+        "DSD": 0,
+        "HOT": 1,
+    }
+
+    def sort_key(row):
+        city = row.get("City", "").strip().upper()
+        stop_id = row.get("Stop ID", "").strip().upper()
+        lpn = row.get("LPN", "").strip().upper()
+
+        prefix = stop_id[:3]
+        priority = stop_priority.get(prefix, 99)
+
+        return (city, priority, stop_id, lpn)
+
+    return sorted(rows, key=sort_key)
+
+
+def parse_pdf(pdf_file):
+    try:
+        return parse_packing_slip(pdf_file)
+    except ValueError as e:
+        raise PackingSlipError(str(e))
+    except Exception as e:
+        raise PackingSlipError(f"Unable to parse PDF: {e}")
 
 def parse_pdf(pdf_file):
     try:
