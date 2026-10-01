@@ -103,7 +103,6 @@ def extract_lpns(text):
 def parse_packing_slip(pdf_file):
     """
     Parse one Wolseley packing slip.
-
     Returns one dictionary for every LPN.
     """
 
@@ -133,6 +132,7 @@ def parse_packing_slip(pdf_file):
     if not lpns:
         raise ValueError("No LPNs found in Container List.")
 
+    # Create rows for THIS packing slip
     rows = []
 
     for lpn in lpns:
@@ -147,14 +147,14 @@ def parse_packing_slip(pdf_file):
         })
 
     return rows
-def parse_packing_slip(pdf_file):
-    # ...all your existing code...
-
-    return rows
 
 
-# ADD IT HERE
 def sort_rows(rows):
+    """
+    Sort all extracted rows:
+    City first, then DSD, HOT, then everything else.
+    """
+
     stop_priority = {
         "DSD": 0,
         "HOT": 1,
@@ -172,14 +172,6 @@ def sort_rows(rows):
 
     return sorted(rows, key=sort_key)
 
-
-def parse_pdf(pdf_file):
-    try:
-        return parse_packing_slip(pdf_file)
-    except ValueError as e:
-        raise PackingSlipError(str(e))
-    except Exception as e:
-        raise PackingSlipError(f"Unable to parse PDF: {e}")
 
 def parse_pdf(pdf_file):
     try:
