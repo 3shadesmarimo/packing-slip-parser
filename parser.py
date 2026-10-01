@@ -1,6 +1,8 @@
 import re
 import pdfplumber
 
+class PackingSlipError(Exception):
+    pass
 
 def _find_first(patterns, text):
     """Return the first successful regex match."""
@@ -144,3 +146,11 @@ def parse_packing_slip(pdf_file):
         })
 
     return rows
+
+def parse_pdf(pdf_file):
+    try:
+        return parse_packing_slip(pdf_file)
+    except ValueError as e:
+        raise PackingSlipError(str(e))
+    except Exception as e:
+        raise PackingSlipError(f"Unable to parse PDF: {e}")
