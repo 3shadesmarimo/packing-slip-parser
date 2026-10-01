@@ -15,21 +15,22 @@ def _find_first(patterns, text):
 
 
 def extract_stop_id(text):
-    """
-    Supports English and French Wolseley packing slips.
-    """
-
     patterns = [
         # English
-        r"Stop\s*Number\s*:\s*(DSD[A-Z0-9]+)",
-        r"Packing\s+Slip\s+For\s+Stop\s+Number\s*:\s*(DSD[A-Z0-9]+)",
+        r"Stop\s*Number\s*:\s*([^\s]+)",
+        r"Packing\s+Slip\s+For\s+Stop\s+Number\s*:\s*([^\s]+)",
 
         # French
-        r"Num[eé]ro\s+d[\'’]?\s*arr[eê]t\s*:\s*(DSD[A-Z0-9]+)",
-        r"Liste\s+de\s+Colisage\s*:\s*(DSD[A-Z0-9]+)",
+        r"Num[eé]ro\s+d[\'’]?\s*arr[eê]t\s*:\s*([^\s]+)",
+        r"Liste\s+de\s+Colisage\s*:\s*([^\s]+)",
     ]
 
-    return _find_first(patterns, text)
+    stop_id = _find_first(patterns, text)
+
+    if stop_id:
+        return stop_id.strip().upper()
+
+    return None 
 
 
 def extract_city(text):
