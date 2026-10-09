@@ -6,7 +6,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 
 
-def create_print_pdf(rows):
+def create_print_pdf(rows, date):
     out = BytesIO()
     doc = SimpleDocTemplate(out, pagesize=letter, leftMargin=28, rightMargin=28,
                             topMargin=32, bottomMargin=37,
@@ -18,8 +18,8 @@ def create_print_pdf(rows):
     small = ParagraphStyle('InfoCustom', parent=styles['Normal'], fontSize=9, leading=13)
     story = [Paragraph('PACKING SLIP - CONTAINER CHECKLIST', title)]
     info = Table([
-        ['Date', '_________________', 'Transporter', '____________________________'],
-        ['Trailer ID', '_________________', 'Name', '____________________________'],
+    ['Date', date, 'Transporter', '____________________________'],
+    ['Trailer ID', '_________________', 'Name', '____________________________'],
     ], colWidths=[68, 175, 79, 234], rowHeights=[29, 29])
     info.setStyle(TableStyle([
         ('BOX', (0,0), (-1,-1), .7, colors.HexColor('#b8c7d1')),
