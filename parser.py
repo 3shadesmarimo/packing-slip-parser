@@ -135,53 +135,47 @@ def extract_lpns(text):
     return list(dict.fromkeys(lpns))
 
 
-def parse_packing_slip(pdf_file):
+def extract_lpns(text):
     """
-    Parse one Wolseley packing slip.
-    Returns one dictionary for every LPN.
+    Extract supported LPN formats from the final Container List.
+
+    Supports:
+        SH0003812
+        SH58812
+        R-133FEWFW
     """
 
-    with pdfplumber.open(pdf_file) as pdf:
-        pages = []
+    matches = list(re.finditer(
+        r"Container\s+List\s*:",
+        text,
+        re.IGNORECASE
+    ))
 
-        for page in pdf.pages:
-            page_text = page.extract_text()
+    if not matches:
+        return []
 
-            if page_text:
-                pages.append(page_text)
+    # Use the final Container List.
+    container_section = text[matches[-1].end():]
 
-    text = "\n".join(pages)
+    # Stop at the end of the container section.
+    container_section = re.split(
+        r"Total\s+Weight|"
+        r"Poids\s+Total|"
+        r"Total\s+Containers|"
+        r"Conteneurs\s+Total",
+        container_section,
+        maxsplit=1,
+        flags=re.IGNORECASE
+    )[0]
 
-    stop_id = extract_stop_id(text)
+    # Recognize SH LPNs and the R- format.
+    lpns = re.findall(
+        r"(?<![A-Za-z0-9_-])(?:SH\d+|R-[A-Za-z0-9]+)(?![A-Za-z0-9_-])",
+        container_section,
+        re.IGNORECASE
+    )
 
-    if not stop_id:
-        raise ValueError("Stop Number not found.")
-
-    city = extract_city(text)
-
-    if not city:
-        raise ValueError("City not found.")
-
-    lpns = extract_lpns(text)
-
-    if not lpns:
-        raise ValueError("No LPNs found in Container List.")
-
-    # Create rows for THIS packing slip
-    rows = []
-
-    for lpn in lpns:
-        rows.append({
-            "Stop ID": stop_id,
-            "City": city,
-            "LPN": lpn,
-            "Pallet": "",
-            "Box": "",
-            "Pipe": "",
-            "Bundle": "",
-        })
-
-    return rows
+    return list(dict.fromkeys(lpn.upper() for lpn in lpns))
 
 
 def sort_rows(rows):
