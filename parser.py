@@ -60,44 +60,79 @@ def extract_city(text):
 
 def extract_lpns(text):
     """
-    Extract SH numbers specifically from the final Container List.
+    Extract LPNs from the final Container List.
 
-    Handles:
+    Supports formats such as:
         SH0003812
-        SH0003813
-        SH0003814
-
-    and shorter numbers such as:
         SH58812
+        R-133FEWFW
+        ABC-12345
+        R_2026_001
+        123456789
+
+    Preserves original values and removes duplicates.
     """
 
     # Find the final Container List section.
-    match = re.search(
-        r"Container\s+List\s*:\s*(.*?)(?:"
+    matches = list(re.finditer(
+        r"Container\s+List\s*:",
+        text,
+        re.IGNORECASE
+    ))
+
+    if not matches:
+        return []
+
+    # Use the last Container List occurrence.
+    container_section = text[matches[-1].end():]
+
+    # Stop at the footer or totals section.
+    container_section = re.split(
         r"Total\s+Weight|"
         r"Poids\s+Total|"
         r"Total\s+Containers|"
-        r"Conteneurs\s+Total|"
-        r"$)",
-        text,
-        re.IGNORECASE | re.DOTALL,
-    )
-
-    if not match:
-        return []
-
-    container_section = match.group(1)
-
-    # LPNs can contain different numbers of digits.
-    lpns = re.findall(
-        r"\bSH\d+\b",
+        r"Conteneurs\s+Total",
         container_section,
-        re.IGNORECASE
-    )
+        maxsplit=1,
+        flags=re.IGNORECASE
+    )[0]
 
-    # Normalize to uppercase and remove duplicates while
-    # preserving the original order.
-    return list(dict.fromkeys(lpn.upper() for lpn in lpns))
+    lpns = []
+
+    for line in container_section.splitlines():
+        line = line.strip()
+
+        if not line:
+            continue
+
+        # Skip common headings.
+        if re.match(
+            r"^(LPN|Container|Container\s+ID|Type|Quantity|Qty)\s*$",
+            line,
+            re.IGNORECASE
+        ):
+            continue
+
+        # Extract possible LPN identifiers.
+        candidates = re.findall(
+            r"\b[A-Za-z0-9]+(?:[-_][A-Za-z0-9]+)*\b",
+            line
+        )
+
+        for candidate in candidates:
+            candidate = candidate.upper()
+
+            # Require at least one digit to avoid ordinary words.
+            if not any(char.isdigit() for char in candidate):
+                continue
+
+            # Skip isolated small quantities.
+            if candidate.isdigit() and len(candidate) < 5:
+                continue
+
+            lpns.append(candidate)
+
+    return list(dict.fromkeys(lpns))
 
 
 def parse_packing_slip(pdf_file):
