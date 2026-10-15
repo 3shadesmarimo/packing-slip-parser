@@ -58,81 +58,6 @@ def extract_city(text):
     return None
 
 
-def extract_lpns(text):
-    """
-    Extract LPNs from the final Container List.
-
-    Supports formats such as:
-        SH0003812
-        SH58812
-        R-133FEWFW
-        ABC-12345
-        R_2026_001
-        123456789
-
-    Preserves original values and removes duplicates.
-    """
-
-    # Find the final Container List section.
-    matches = list(re.finditer(
-        r"Container\s+List\s*:",
-        text,
-        re.IGNORECASE
-    ))
-
-    if not matches:
-        return []
-
-    # Use the last Container List occurrence.
-    container_section = text[matches[-1].end():]
-
-    # Stop at the footer or totals section.
-    container_section = re.split(
-        r"Total\s+Weight|"
-        r"Poids\s+Total|"
-        r"Total\s+Containers|"
-        r"Conteneurs\s+Total",
-        container_section,
-        maxsplit=1,
-        flags=re.IGNORECASE
-    )[0]
-
-    lpns = []
-
-    for line in container_section.splitlines():
-        line = line.strip()
-
-        if not line:
-            continue
-
-        # Skip common headings.
-        if re.match(
-            r"^(LPN|Container|Container\s+ID|Type|Quantity|Qty)\s*$",
-            line,
-            re.IGNORECASE
-        ):
-            continue
-
-        # Extract possible LPN identifiers.
-        candidates = re.findall(
-            r"\b[A-Za-z0-9]+(?:[-_][A-Za-z0-9]+)*\b",
-            line
-        )
-
-        for candidate in candidates:
-            candidate = candidate.upper()
-
-            # Require at least one digit to avoid ordinary words.
-            if not any(char.isdigit() for char in candidate):
-                continue
-
-            # Skip isolated small quantities.
-            if candidate.isdigit() and len(candidate) < 5:
-                continue
-
-            lpns.append(candidate)
-
-    return list(dict.fromkeys(lpns))
 
 
 def extract_lpns(text):
@@ -177,6 +102,51 @@ def extract_lpns(text):
 
     return list(dict.fromkeys(lpn.upper() for lpn in lpns))
 
+def parse_packing_slip(pdf_file):
+    """
+    Parse one packing slip and return a row for each LPN.
+    """
+
+    with pdfplumber.open(pdf_file) as pdf:
+        pages = []
+
+        for page in pdf.pages:
+            page_text = page.extract_text()
+
+            if page_text:
+                pages.append(page_text)
+
+    text = "\n".join(pages)
+
+    stop_id = extract_stop_id(text)
+
+    if not stop_id:
+        raise ValueError("Stop Number not found.")
+
+    city = extract_city(text)
+
+    if not city:
+        raise ValueError("City not found.")
+
+    lpns = extract_lpns(text)
+
+    if not lpns:
+        raise ValueError("No LPNs found in Container List.")
+
+    rows = []
+
+    for lpn in lpns:
+        rows.append({
+            "Stop ID": stop_id,
+            "City": city,
+            "LPN": lpn,
+            "Pallet": "",
+            "Box": "",
+            "Pipe": "",
+            "Bundle": "",
+        })
+
+    return rows
 
 def sort_rows(rows):
     """
