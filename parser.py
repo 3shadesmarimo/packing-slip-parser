@@ -62,12 +62,13 @@ def extract_city(text):
 
 def extract_lpns(text):
     """
-    Extract supported LPN formats from the final Container List.
+    Extract LPNs from the final comma-separated Container List.
 
     Supports:
-        SH0003812
-        SH58812
+        SH56575
         R-133FEWFW
+        781889033036
+        ABC-12345
     """
 
     matches = list(re.finditer(
@@ -79,10 +80,8 @@ def extract_lpns(text):
     if not matches:
         return []
 
-    # Use the final Container List.
     container_section = text[matches[-1].end():]
 
-    # Stop at the end of the container section.
     container_section = re.split(
         r"Total\s+Weight|"
         r"Poids\s+Total|"
@@ -93,14 +92,15 @@ def extract_lpns(text):
         flags=re.IGNORECASE
     )[0]
 
-    # Recognize SH LPNs and the R- format.
-    lpns = re.findall(
-        r"(?<![A-Za-z0-9_-])(?:SH\d+|R-[A-Za-z0-9]+)(?![A-Za-z0-9_-])",
-        container_section,
-        re.IGNORECASE
-    )
+    lpns = []
 
-    return list(dict.fromkeys(lpn.upper() for lpn in lpns))
+    for item in container_section.split(","):
+        lpn = item.strip().upper()
+
+        if re.fullmatch(r"[A-Z0-9]+(?:[-_][A-Z0-9]+)*", lpn):
+            lpns.append(lpn)
+
+    return list(dict.fromkeys(lpns))
 
 def parse_packing_slip(pdf_file):
     """
