@@ -62,19 +62,13 @@ def extract_city(text):
 
 def extract_lpns(text):
     """
-    Extract LPNs from the final comma-separated Container List.
-
-    Supports:
-        SH56575
-        R-133FEWFW
-        781889033036
-        ABC-12345
+    Extract LPNs only from the final Container List.
+    Supports single, multiple, numeric and alphanumeric LPNs.
     """
 
     matches = list(re.finditer(
-        r"Container\s+List\s*:",
-        text,
-        re.IGNORECASE
+        r"(?im)^\s*Container\s+List\s*:\s*$",
+        text
     ))
 
     if not matches:
@@ -82,23 +76,33 @@ def extract_lpns(text):
 
     container_section = text[matches[-1].end():]
 
+    # Stop before totals or the next PDF page header.
     container_section = re.split(
-        r"Total\s+Weight|"
-        r"Poids\s+Total|"
-        r"Total\s+Containers|"
-        r"Conteneurs\s+Total",
+        r"(?im)^\s*(?:"
+        r"Page\s*:\s*\d+\b|"
+        r"Total\s+Weight\b|"
+        r"Poids\s+Total\b|"
+        r"Total\s+Containers\b|"
+        r"Conteneurs\s+Total\b|"
+        r"Packing\s+Slip\s+For\s+Stop\b|"
+        r"Liste\s+de\s+Colisage\s*:"
+        r")",
         container_section,
-        maxsplit=1,
-        flags=re.IGNORECASE
+        maxsplit=1
     )[0]
 
     lpns = []
 
-    for item in container_section.split(","):
-        lpn = item.strip().upper()
+    for line in container_section.splitlines():
+        for item in line.split(","):
+            lpn = item.strip()
 
-        if re.fullmatch(r"[A-Z0-9]+(?:[-_][A-Z0-9]+)*", lpn):
-            lpns.append(lpn)
+            # Accept complete identifiers, not random text.
+            if re.fullmatch(
+                r"[A-Za-z0-9]+(?:[-_][A-Za-z0-9]+)*",
+                lpn
+            ) and any(char.isdigit() for char in lpn):
+                lpns.append(lpn.upper())
 
     return list(dict.fromkeys(lpns))
 
