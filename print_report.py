@@ -1,12 +1,13 @@
 """Combined print-ready Letter checklist: every uploaded stop/city/LPN in one table."""
 from io import BytesIO
+from xml.sax.saxutils import escape
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 
 
-def create_print_pdf(rows, date):
+def create_print_pdf(rows, date, transporter="", name=""):
     out = BytesIO()
     doc = SimpleDocTemplate(out, pagesize=letter, leftMargin=28, rightMargin=28,
                             topMargin=32, bottomMargin=37,
@@ -17,10 +18,24 @@ def create_print_pdf(rows, date):
                            textColor=colors.HexColor('#17324f'))
     small = ParagraphStyle('InfoCustom', parent=styles['Normal'], fontSize=9, leading=13)
     story = [Paragraph('PACKING SLIP - CONTAINER CHECKLIST', title)]
+    
+    
     info = Table([
-    ['Date', date, 'Transporter', '____________________________'],
-    ['Trailer ID', '_________________', 'Name', '____________________________'],
-    ], colWidths=[68, 175, 79, 234], rowHeights=[29, 29])
+        [
+            'Date',
+            date,
+            'Transporter',
+            Paragraph(escape(transporter), small)
+        ],
+        [
+            'Trailer ID',
+            '_________________',
+            'Name',
+            Paragraph(escape(name), small)
+        ],
+    ], colWidths=[68, 175, 79, 234])
+
+
     info.setStyle(TableStyle([
         ('BOX', (0,0), (-1,-1), .7, colors.HexColor('#b8c7d1')),
         ('INNERGRID', (0,0), (-1,-1), .5, colors.HexColor('#d3dce3')),
