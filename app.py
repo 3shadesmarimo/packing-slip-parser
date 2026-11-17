@@ -108,10 +108,6 @@ if not transporter.strip() or not name.strip():
     )
 
 
-# -----------------------------------
-# MANUAL ENTRY
-# -----------------------------------
-
 
 
 # -----------------------------------
@@ -121,64 +117,75 @@ if not transporter.strip() or not name.strip():
 st.divider()
 st.subheader("✍️ Add Packing Slip Manually")
 
+
+def add_manual_lpns():
+    city = st.session_state.manual_city.strip().upper()
+    stop_id = st.session_state.manual_stop_id.strip()
+    lpns = [
+        line.strip()
+        for line in st.session_state.manual_lpns.splitlines()
+        if line.strip()
+    ]
+
+    if not city or not stop_id or not lpns:
+        st.session_state.manual_feedback = (
+            "error",
+            "Enter a city, a stop ID, and at least one LPN."
+        )
+        return
+
+    st.session_state.rows.extend(
+        {"Stop ID": stop_id, "City": city, "LPN": lpn}
+        for lpn in lpns
+    )
+    set_extraction_date()
+
+    st.session_state.manual_lpns = ""
+    st.session_state.manual_feedback = (
+        "success",
+        f"Added {len(lpns)} LPN(s) for {city}, stop {stop_id}."
+    )
+
+
 with st.expander("➕ Manual Entry", expanded=False):
-
-    with st.form("manual_entry_form", clear_on_submit=True):
-
-        city = st.text_input(
+    with st.form("manual_entry_form"):
+        st.text_input(
             "City *",
-            placeholder="Example: EDMUNDSTON"
+            placeholder="Example: EDMUNDSTON",
+            key="manual_city"
         )
-
-        stop_id = st.text_input(
+        st.text_input(
             "Stop ID *",
-            placeholder="Enter Stop ID"
+            placeholder="Enter Stop ID",
+            key="manual_stop_id"
+        )
+        st.text_area(
+            "LPNs *",
+            placeholder="Enter or paste one LPN per line",
+            height=220,
+            key="manual_lpns"
+        )
+        st.caption("Press Enter after each LPN to start a new line.")
+
+        st.form_submit_button(
+            "➕ Add LPNs to Checklist",
+            type="primary",
+            on_click=add_manual_lpns
         )
 
-        lpn = st.text_input(
-            "LPN *",
-            placeholder="Enter LPN"
-        )
-
-        st.caption("* All fields are required.")
-
-        submitted = st.form_submit_button(
-            "➕ Add to Checklist",
-            type="primary"
-        )
-
-        if submitted:
-            city = city.strip().upper()
-            stop_id = stop_id.strip()
-            lpn = lpn.strip()
-
-            if not all([city, stop_id, lpn]):
-                st.error("Please complete all three fields.")
-
-            else:
-                manual_row = {
-                    "Stop ID": stop_id,
-                    "City": city,
-                    "LPN": lpn
-                }
-
-                st.session_state.rows.append(manual_row)
-                set_extraction_date()
-
-                st.success(
-                    f"Successfully added LPN {lpn} for {city}!"
-                )
-
+    feedback = st.session_state.pop("manual_feedback", None)
+    if feedback:
+        status, message = feedback
+        if status == "error":
+            st.error(message)
+        else:
+            st.success(message)
 
 
 # -----------------------------------
 # CHECKLIST RESULTS
 # -----------------------------------
 
-
-# -----------------------------------
-# CHECKLIST RESULTS
-# -----------------------------------
 
 st.divider()
 
